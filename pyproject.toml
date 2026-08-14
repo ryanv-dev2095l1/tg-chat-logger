@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tg-chat-logger"
+version = "0.1.0"
+description = "Dumps and parses alert channels from Telegram into SQLite"
+authors = [{ name = "Dan", email = "dan@local" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "telethon>=1.30.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+tg-chat-logger = "tg_chat_logger.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
