@@ -22,7 +22,9 @@ class LogEvent:
     message: str
     service: str = "unknown"
     tags: List[str] = field(default_factory=list)
+    exception_type: Optional[str] = None
     stacktrace: Optional[str] = None
+    fingerprint: Optional[str] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -31,3 +33,4 @@ class FilterParams:
     min_level: str = "INFO"
     services: List[str] = field(default_factory=list)
     ignore_patterns: List[str] = field(default_factory=list)
+    drop_empty_stacktraces: bool = False

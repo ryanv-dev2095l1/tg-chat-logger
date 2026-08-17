@@ -4,18 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tg-chat-logger"
-version = "0.1.0"
-description = "Dumps and parses alert channels from Telegram into SQLite"
+version = "0.2.0"
+description = "Telegram alert scraper with trace extraction and prometheus exporter"
 authors = [{ name = "Dan", email = "dan@local" }]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "telethon>=1.30.0",
-    "pyyaml>=6.0",
+    "telethon>=1.32.0",
+    "pyyaml>=6.0.1",
+    "prometheus-client>=0.19.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
 ]
 
 [project.scripts]
 tg-chat-logger = "tg_chat_logger.cli:main"
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 testpaths = ["tests"]

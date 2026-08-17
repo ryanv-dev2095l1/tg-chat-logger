@@ -21,6 +21,7 @@ class Config:
     prometheus_port: int = 9102
     log_level: str = "INFO"
     drop_pending_updates: bool = False
+    max_retries: int = 5
 
 
 def _parse_chat_ids(val: str) -> List[int]:
@@ -38,7 +39,7 @@ def _parse_chat_ids(val: str) -> List[int]:
 
 def load_config(config_path: Optional[Path] = None) -> Config:
     data = {}
-    if config_path and config_path.is_file():
+    if config_path and Path(config_path).is_file():
         with open(config_path, "rb") as f:
             data = tomllib.load(f)
 
@@ -48,7 +49,7 @@ def load_config(config_path: Optional[Path] = None) -> Config:
     app_sec = data.get("app", {})
 
     # Env overrides take precedence
-    token = os.getenv("TG_BOT_TOKEN", tg_sec.get("token", ""))
+    token = os.getenv("TG_BOT_TOKEN", tg_sec.get("token", "")).strip()
     if not token:
         raise ValueError("bot token is required (set TG_BOT_TOKEN or config telegram.token)")
 
@@ -57,6 +58,7 @@ def load_config(config_path: Optional[Path] = None) -> Config:
         chat_ids = _parse_chat_ids(env_chats)
     else:
         raw_ids = tg_sec.get("chat_ids", [])
+        # tg ids can be negative for supergroups and channels
         chat_ids = [int(x) for x in raw_ids if str(x).lstrip("-").isdigit()]
 
     db_str = os.getenv("TG_DB_PATH", store_sec.get("db_path", "alerts.sqlite3"))
@@ -65,6 +67,7 @@ def load_config(config_path: Optional[Path] = None) -> Config:
     poll_int = float(os.getenv("TG_POLL_INTERVAL", tg_sec.get("poll_interval", 1.0)))
     log_lvl = os.getenv("TG_LOG_LEVEL", app_sec.get("log_level", "INFO")).upper()
     drop_pend = os.getenv("TG_DROP_PENDING", str(tg_sec.get("drop_pending_updates", False))).lower() in ("1", "true", "yes")
+    max_ret = int(os.getenv("TG_MAX_RETRIES", tg_sec.get("max_retries", 5)))
 
     return Config(
         bot_token=token,
@@ -75,4 +78,5 @@ def load_config(config_path: Optional[Path] = None) -> Config:
         prometheus_port=prom_port,
         log_level=log_lvl,
         drop_pending_updates=drop_pend,
+        max_retries=max_ret,
     )

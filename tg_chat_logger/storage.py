@@ -1,8 +1,8 @@
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from tg_chat_logger.models import ParsedEvent
 
@@ -57,6 +57,7 @@ class EventStorage:
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
         raw_str = json.dumps(event.raw_data) if isinstance(event.raw_data, dict) else str(event.raw_data)
+        # print(f"DEBUG: inserting {event.channel_id}:{event.message_id}")
         with self._get_conn() as conn:
             cur = conn.execute(
                 query,
@@ -73,15 +74,47 @@ class EventStorage:
             )
             return cur.rowcount > 0
 
-    def query_recent(self, limit: int = 50, service: Optional[str] = None) -> List[dict]:
-        sql = "SELECT * FROM events"
-        params = []
+    def query_recent(
+        self,
+        limit: int = 50,
+        service: Optional[str] = None,
+        level: Optional[str] = None,
+    ) -> List[dict]:
+        clauses = []
+        params: List[Any] = []
         if service:
-            sql += " WHERE service = ?"
+            clauses.append("service = ?")
             params.append(service)
+        if level:
+            clauses.append("level = ?")
+            params.append(level.upper())
+
+        sql = "SELECT * FROM events"
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
         sql += " ORDER BY timestamp DESC LIMIT ?"
         params.append(limit)
 
         with self._get_conn() as conn:
             cur = conn.execute(sql, params)
             return [dict(row) for row in cur.fetchall()]
+
+    def get_service_counts(self, since_hours: int = 24) -> Dict[str, int]:
+        cutoff = (datetime.utcnow() - timedelta(hours=since_hours)).isoformat()
+        sql = """
+        SELECT service, COUNT(*) as cnt
+        FROM events
+        WHERE timestamp >= ?
+        GROUP BY service
+        ORDER BY cnt DESC
+        """
+        with self._get_conn() as conn:
+            cur = conn.execute(sql, (cutoff,))
+            return {row["service"]: row["cnt"] for row in cur.fetchall()}
+
+    def purge_old_records(self, days: int = 30) -> int:
+        # FIXME: runs slow on unindexed created_at if table grows over 1M records
+        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        with self._get_conn() as conn:
+            cur = conn.execute("DELETE FROM events WHERE timestamp < ?", (cutoff,))
+            return cur.rowcount
