@@ -71,3 +71,5 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 ```
+
+<!-- last-sync: 2026-09-08 -->
