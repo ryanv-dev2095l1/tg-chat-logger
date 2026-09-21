@@ -72,4 +72,4 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-<!-- last-sync: 2026-09-20 -->
+<!-- last-sync: 2026-09-21 -->
